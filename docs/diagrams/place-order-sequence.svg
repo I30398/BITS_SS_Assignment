@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" font-family="Segoe UI, Arial, sans-serif" font-size="12">
+  <title>placeOrder collaboration sequence - 2025MT03083 / Ajeet Kumar Yadav</title>
+  <defs>
+    <marker id="s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+  </defs>
+  <rect width="900" height="520" fill="#ffffff"/>
+
+  <!-- lifelines at x=90, 300, 520, 720, 840 -->
+  <g font-weight="600" text-anchor="middle">
+    <rect x="30" y="16" width="120" height="36" rx="6" fill="#f1f5f9" stroke="#64748b"/><text x="90" y="39">Customer</text>
+    <rect x="235" y="16" width="130" height="36" rx="6" fill="#dcfce7" stroke="#16a34a"/><text x="300" y="39">Order Service</text>
+    <rect x="445" y="16" width="150" height="36" rx="6" fill="#dcfce7" stroke="#16a34a"/><text x="520" y="39">Restaurant Service</text>
+    <rect x="665" y="16" width="110" height="36" rx="6" fill="#f1f5f9" stroke="#64748b"/><text x="720" y="39">order_db</text>
+    <rect x="780" y="16" width="116" height="36" rx="6" fill="#f1f5f9" stroke="#64748b"/><text x="840" y="39">restaurant_db</text>
+  </g>
+  <g stroke="#cbd5e1" stroke-dasharray="4 4">
+    <line x1="90" y1="52" x2="90" y2="500"/>
+    <line x1="300" y1="52" x2="300" y2="500"/>
+    <line x1="520" y1="52" x2="520" y2="500"/>
+    <line x1="720" y1="52" x2="720" y2="500"/>
+    <line x1="840" y1="52" x2="840" y2="500"/>
+  </g>
+  <rect x="294" y="80" width="12" height="390" fill="#bbf7d0" stroke="#16a34a"/>
+  <rect x="514" y="130" width="12" height="122" fill="#bbf7d0" stroke="#16a34a"/>
+
+  <g stroke="#334155" stroke-width="1.5" fill="none">
+    <line x1="90" y1="85" x2="292" y2="85" marker-end="url(#s)"/>
+    <line x1="306" y1="135" x2="512" y2="135" marker-end="url(#s)"/>
+    <line x1="526" y1="170" x2="838" y2="170" marker-end="url(#s)"/>
+    <line x1="838" y1="200" x2="528" y2="200" marker-end="url(#s)" stroke-dasharray="5 3"/>
+    <line x1="512" y1="250" x2="308" y2="250" marker-end="url(#s)" stroke-dasharray="5 3"/>
+    <line x1="306" y1="356" x2="718" y2="356" marker-end="url(#s)"/>
+    <line x1="718" y1="380" x2="308" y2="380" marker-end="url(#s)" stroke-dasharray="5 3"/>
+    <line x1="292" y1="460" x2="92" y2="460" marker-end="url(#s)" stroke-dasharray="5 3"/>
+  </g>
+  <g fill="#0f172a">
+    <text x="100" y="78">1. POST /api/orders</text>
+    <text x="100" y="102" fill="#64748b" font-size="11">{customerId, items[]}</text>
+    <text x="316" y="128">2. POST /api/restaurants/{id}/menu/validate</text>
+    <text x="536" y="163">3. SELECT restaurant, menu_items</text>
+    <text x="560" y="218" fill="#64748b" font-size="11">rows (is_open, available, price)</text>
+    <text x="316" y="268">4. {valid, restaurantName, items[unitPrice]}</text>
+    <text x="316" y="284" fill="#64748b" font-size="11">timeout 3s · 2 retries · 404/503 mapped to client</text>
+
+    <rect x="316" y="294" width="380" height="36" rx="4" fill="#fef9c3" stroke="#ca8a04"/>
+    <text x="326" y="309" font-size="11">alt valid = false → 422 ORDER_REJECTED (no DB write)</text>
+    <text x="326" y="324" font-size="11">alt restaurant down → 503 SERVICE_UNAVAILABLE</text>
+
+    <text x="316" y="350">5. BEGIN; INSERT orders, order_items, status_history; COMMIT</text>
+    <text x="460" y="398" fill="#64748b" font-size="11">ok</text>
+    <text x="100" y="453">6. 201 Created {id, status: PLACED, totalAmount}</text>
+    <text x="316" y="420" fill="#b45309" font-size="11">(future) publish OrderPlaced → Payment, Notification</text>
+  </g>
+</svg>

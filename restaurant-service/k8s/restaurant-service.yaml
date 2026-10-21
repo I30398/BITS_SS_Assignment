@@ -1,0 +1,94 @@
+# Restaurant Service - 2025MT03083 / Ajeet Kumar Yadav
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: restaurant-service-config
+  namespace: foodexpress
+data:
+  PORT: "3001"
+  DB_HOST: restaurant-db
+  DB_PORT: "5432"
+  SEED_DATA: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restaurant-service
+  namespace: foodexpress
+  labels:
+    app: restaurant-service
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: restaurant-service
+  template:
+    metadata:
+      labels:
+        app: restaurant-service
+        tier: backend
+    spec:
+      containers:
+        - name: restaurant-service
+          image: restaurant-service:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: restaurant-service-config
+          env:
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: restaurant-db-secret, key: POSTGRES_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: restaurant-db-secret, key: POSTGRES_PASSWORD } }
+            - name: DB_NAME
+              valueFrom: { secretKeyRef: { name: restaurant-db-secret, key: POSTGRES_DB } }
+          readinessProbe:
+            httpGet: { path: /health, port: 3001 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 3001 }
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 100m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: restaurant-service
+  namespace: foodexpress
+  labels:
+    app: restaurant-service
+spec:
+  type: NodePort
+  selector:
+    app: restaurant-service
+  ports:
+    - port: 3001
+      targetPort: 3001
+      nodePort: 30001
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: restaurant-service-hpa
+  namespace: foodexpress
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: restaurant-service
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

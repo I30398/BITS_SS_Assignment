@@ -1,0 +1,171 @@
+{
+  "info": {
+    "name": "2025MT03083 / Ajeet Kumar Yadav - FoodExpress",
+    "description": "Service calls for the FoodExpress Restaurant Service and Order Service deployed on Minikube. Set restaurantUrl / orderUrl to http://<minikube ip>:30001 and :30002 (or the URLs printed by `minikube service ... --url`).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "restaurantUrl", "value": "http://192.168.49.2:30001" },
+    { "key": "orderUrl", "value": "http://192.168.49.2:30002" },
+    { "key": "restaurantId", "value": "rest-001" },
+    { "key": "newRestaurantId", "value": "" },
+    { "key": "orderId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Restaurant Service",
+      "item": [
+        {
+          "name": "01 Health",
+          "request": { "method": "GET", "url": "{{restaurantUrl}}/health" }
+        },
+        {
+          "name": "02 Register restaurant (command)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('newRestaurantId', pm.response.json().id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{restaurantUrl}}/api/restaurants",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Dosa Corner\",\n  \"cuisine\": \"South Indian\",\n  \"city\": \"Bengaluru\",\n  \"address\": \"7 Koramangala\",\n  \"rating\": 4.3\n}" }
+          }
+        },
+        {
+          "name": "03 Add menu item (command)",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));"] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{restaurantUrl}}/api/restaurants/{{newRestaurantId}}/menu",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Masala Dosa\",\n  \"description\": \"Crispy dosa with potato filling\",\n  \"category\": \"Breakfast\",\n  \"price\": 99,\n  \"isVeg\": true\n}" }
+          }
+        },
+        {
+          "name": "04 Search restaurants (query)",
+          "request": { "method": "GET", "url": "{{restaurantUrl}}/api/restaurants?city=Bengaluru" }
+        },
+        {
+          "name": "05 Get restaurant details (query)",
+          "request": { "method": "GET", "url": "{{restaurantUrl}}/api/restaurants/{{restaurantId}}" }
+        },
+        {
+          "name": "06 Browse menu (query)",
+          "request": { "method": "GET", "url": "{{restaurantUrl}}/api/restaurants/{{restaurantId}}/menu" }
+        },
+        {
+          "name": "07 Update menu item price (command)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{restaurantUrl}}/api/restaurants/{{restaurantId}}/menu/item-102",
+            "body": { "mode": "raw", "raw": "{\n  \"price\": 50\n}" }
+          }
+        },
+        {
+          "name": "08 Validate order items (internal query)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{restaurantUrl}}/api/restaurants/{{restaurantId}}/menu/validate",
+            "body": { "mode": "raw", "raw": "{\n  \"items\": [\n    { \"menuItemId\": \"item-101\", \"quantity\": 2 },\n    { \"menuItemId\": \"item-102\", \"quantity\": 4 }\n  ]\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Order Service",
+      "item": [
+        {
+          "name": "01 Health",
+          "request": { "method": "GET", "url": "{{orderUrl}}/health" }
+        },
+        {
+          "name": "02 Place order (command, calls Restaurant Service)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('orderId', pm.response.json().id);"
+          ] } }],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{orderUrl}}/api/orders",
+            "body": { "mode": "raw", "raw": "{\n  \"customerId\": \"cust-2025MT03083\",\n  \"restaurantId\": \"rest-001\",\n  \"deliveryAddress\": \"BITS Pilani WILP, Bengaluru\",\n  \"items\": [\n    { \"menuItemId\": \"item-101\", \"quantity\": 2 },\n    { \"menuItemId\": \"item-102\", \"quantity\": 4 }\n  ]\n}" }
+          }
+        },
+        {
+          "name": "03 Track order (query)",
+          "request": { "method": "GET", "url": "{{orderUrl}}/api/orders/{{orderId}}" }
+        },
+        {
+          "name": "04 Accept order (command)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{orderUrl}}/api/orders/{{orderId}}/status",
+            "body": { "mode": "raw", "raw": "{ \"status\": \"ACCEPTED\" }" }
+          }
+        },
+        {
+          "name": "05 Preparing (command)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{orderUrl}}/api/orders/{{orderId}}/status",
+            "body": { "mode": "raw", "raw": "{ \"status\": \"PREPARING\" }" }
+          }
+        },
+        {
+          "name": "06 Out for delivery (command)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{orderUrl}}/api/orders/{{orderId}}/status",
+            "body": { "mode": "raw", "raw": "{ \"status\": \"OUT_FOR_DELIVERY\" }" }
+          }
+        },
+        {
+          "name": "07 Delivered (command)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{orderUrl}}/api/orders/{{orderId}}/status",
+            "body": { "mode": "raw", "raw": "{ \"status\": \"DELIVERED\" }" }
+          }
+        },
+        {
+          "name": "08 Order history by customer (query)",
+          "request": { "method": "GET", "url": "{{orderUrl}}/api/orders?customerId=cust-2025MT03083" }
+        },
+        {
+          "name": "09 Place and cancel order (command)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{orderUrl}}/api/orders",
+            "body": { "mode": "raw", "raw": "{\n  \"customerId\": \"cust-2025MT03083\",\n  \"restaurantId\": \"rest-002\",\n  \"deliveryAddress\": \"BITS Pilani WILP, Bengaluru\",\n  \"items\": [ { \"menuItemId\": \"item-201\", \"quantity\": 1 } ]\n}" }
+          }
+        },
+        {
+          "name": "10 Negative - item from another restaurant (422)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{orderUrl}}/api/orders",
+            "body": { "mode": "raw", "raw": "{\n  \"customerId\": \"cust-2025MT03083\",\n  \"restaurantId\": \"rest-001\",\n  \"deliveryAddress\": \"BITS Pilani WILP\",\n  \"items\": [ { \"menuItemId\": \"item-201\", \"quantity\": 1 } ]\n}" }
+          }
+        },
+        {
+          "name": "11 Negative - invalid transition (409)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{orderUrl}}/api/orders/{{orderId}}/status",
+            "body": { "mode": "raw", "raw": "{ \"status\": \"ACCEPTED\" }" }
+          }
+        }
+      ]
+    }
+  ]
+}
